@@ -7,10 +7,14 @@ from models import Todo
 
 app = FastAPI(title="IRRS App with DB")
 
-# ✅ 新增：极简健康检查
+@app.get("/")
+def root():
+    return {"ok": True}
+
 @app.get("/healthz")
-def healthz():
-    return {"status": "ok"}
+def health():
+    return {"status": "healthy"}
+    
 
 # ✅ 修改：不要在模块导入时连库建表，改到启动事件里做
 @app.on_event("startup")
