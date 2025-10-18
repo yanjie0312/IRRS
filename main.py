@@ -4,16 +4,28 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import Base, engine, get_db
 from models import Todo
-
+import os
 app = FastAPI(title="IRRS App with DB")
+
+
+
+
+
 
 @app.get("/")
 def root():
     return {"ok": True}
 
 @app.get("/healthz")
-def health():
+def healthz():
     return {"status": "healthy"}
+
+# 本地调试时用：python app.py 也能跑
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", "8080"))
+    uvicorn.run("app:app", host="0.0.0.0", port=port)
+
     
 
 # ✅ 修改：不要在模块导入时连库建表，改到启动事件里做
