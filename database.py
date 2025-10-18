@@ -1,26 +1,33 @@
-# database.py
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from config import settings
 import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-# ✅ 1. 给 DATABASE_URL 一个安全的默认值（防止 env 没配置时报错）
-DATABASE_URL = getattr(settings, "DATABASE_URL", None) or os.getenv("DATABASE_URL", "sqlite:///./app.db")
+# 从环境变量读取配置
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASS = os.getenv("DB_PASS", "")
+DB_NAME = os.getenv("DB_NAME", "irrs_db")
+INSTANCE_CONNECTION_NAME = os.getenv("INSTANCE_CONNECTION_NAME")
 
-# ✅ 2. 为 SQLite 加上 connect_args，其他数据库则不加
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+# Cloud Run + Cloud SQL 推荐使用 Unix Socket 路径
+# host="/cloudsql/<project>:<region>:<instance>"
+DB_SOCKET_DIR = f"/cloudsql/{INSTANCE_CONNECTION_NAME}"
 
-# ✅ 3. 加上 pool_pre_ping=True，避免连接池中断
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args=connect_args)
+# 构造连接字符串（PostgreSQL）
+SQLALCHEMY_DATABASE_URL = (
+    f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@/{DB_NAME}?host={DB_SOCKET_DIR}"
+)
 
-# ✅ 4. 创建 session 工厂
+# 创建 SQLAlchemy engine
+engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
+
+# 创建 session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# ✅ 5. 声明 Base
-class Base(DeclarativeBase):
-    pass
+# ORM 基类
+Base = declarative_base()
 
-# ✅ 6. 提供依赖注入函数
+
+# 依赖函数（用于 FastAPI 路由中自动注入）
 def get_db():
     db = SessionLocal()
     try:
